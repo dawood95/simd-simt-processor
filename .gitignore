@@ -1,0 +1,12 @@
+work
+mapped
+fpga
+transcript
+modelsim.ini
+*.wif
+*.swp
+._*
+*.log
+.deps
+*.hex
+*.ver
