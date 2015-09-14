@@ -18,7 +18,7 @@ module vector_register_file #(parameter THREADS = 4)
 
    int 		i;
    
-   word_t register_file[31:0][THREADS-1];
+   word_t register_file[31:0][THREADS];
 
    always_ff @ (posedge clk or negedge nRST)
      begin

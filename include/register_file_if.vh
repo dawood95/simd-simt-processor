@@ -31,14 +31,14 @@ interface scalar_register_file_if;
 endinterface // scalar_register_file_if
 
 
-interface vector_register_file_if #(THREADS = 4);
+interface vector_register_file_if #(parameter THREADS = 4);
    
    import cpu_types_pkg::*;
    
    regbits_t wsel, rsel1, rsel2;
-   logic wen[THREADS-1];
+   logic wen[THREADS];
    
-   word_t wdata[THREADS-1], rdata1[THREADS-1], rdata2[THREADS-1];
+   word_t wdata[THREADS], rdata1[THREADS], rdata2[THREADS];
    
    modport rf(
 	      input  wen, wsel, rsel1, rsel2, wdata,
