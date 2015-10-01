@@ -19,15 +19,15 @@ module vector_alu #(parameter THREADS = 4)
    generate
       for(i = 0; i < THREADS; i++)
 	begin : v_alu
-	   alu ALU(
-		   .\alu.nf (alu.nf[i]),
-		   .\alu.zf (alu.zf[i]),
-		   .\alu.of (alu.of[i]),
-		   .\alu.porta (alu.porta[i]),
-		   .\alu.portb (alu.portb[i]),
-		   .\alu.out (alu.out[i]),
-		   .\alu.op (alu.op[i])
-		   );
+	   scalar_alu ALU(
+			  .\alu.nf (alu.nf[i]),
+			  .\alu.zf (alu.zf[i]),
+			  .\alu.of (alu.of[i]),
+			  .\alu.porta (alu.porta[i]),
+			  .\alu.portb (alu.portb[i]),
+			  .\alu.out (alu.out[i]),
+			  .\alu.op (alu.op[i])
+			  );
 	end
    endgenerate
    

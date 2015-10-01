@@ -20,11 +20,11 @@ interface load_store_unit_if;
 
    // Datapath signals
    
-   logic readReq, writeReq, instReq;
+   logic dhalt, readReq, writeReq, instReq;
 
    logic dHit, iHit;
 
-   logic isVector;
+   logic isVector, flushed;
    
    word_t vdaddr[THREADS], vdstore[THREADS], vdload[THREADS];
    word_t sdaddr, sdstore, sdload;
@@ -32,7 +32,7 @@ interface load_store_unit_if;
 
    // Cache signals
 
-   logic halt, imemREN, dmemREN, dmemWEN;
+   logic chalt, imemREN, dmemREN, dmemWEN;
 
    logic icacheHit, dcacheHit;
    
@@ -43,28 +43,28 @@ interface load_store_unit_if;
    modport loadstore 
      (
       // Datapath
-      input  instReq, readReq, writeReq, isVector, halt,
+      input  readReq, writeReq, isVector, dhalt,
 	     vdaddr, vdstore, sdaddr, sdstore, iaddr, 
       output iHit, dHit,
 	     iload, vdload, sdload,
       // Cache
       input  imemload, dmemload, icacheHit, dcacheHit,
-      output halt, imemREN, dmemREN, dmemWEN,
+      output chalt, imemREN, dmemREN, dmemWEN,
 	     imemaddr, dmemaddr, dmemstore
       );
 
    modport datapath 
      (
-      output instReq, readReq, writeReq, isVector, halt,
+      output instReq, readReq, writeReq, dhalt, isVector,
 	     vdaddr, vdstore, sdaddr, sdstore, iaddr, 
-      input  iHit, dHit,
+      input  iHit, dHit, 
 	     iload, vdload, sdload
       );
    
    modport cache 
      (
-      output imemload, dmemload, icacheHit, dcacheHit,
-      input  halt, imemREN, dmemREN, dmemWEN,
+      output imemload, dmemload, icacheHit, dcacheHit, flushed,
+      input  chalt, imemREN, dmemREN, dmemWEN,
 	     imemaddr, dmemaddr, dmemstore
       );
    

@@ -17,15 +17,15 @@ module singlecycle (
    parameter THREADS = 4;
 
    // bus interface
-   datapath_cache_if         dcif ();
+   load_store_unit_if         lsif ();
    
    // coherence interface
-   cache_control_if    #(.CPUID(0),.THREADS(THREADS))       ccif ();
+   cache_control_if    #(.CPUID(0))       ccif ();
    
    // map datapath
-   datapath #(.PC_INIT(PC0)) DP (CLK, nRST, dcif);
+   datapath #(.PC_INIT(PC0)) DP (CLK, nRST, lsif);
    // map caches
-   caches #(.CPUID(0))       CM (CLK, nRST, dcif, ccif);
+   caches #(.CPUID(0))       CM (CLK, nRST, lsif, ccif);
    // map coherence
    memory_control            CC (CLK, nRST, ccif);
 
@@ -38,5 +38,5 @@ module singlecycle (
    assign ccif.ramload = scif.ramload;
    assign ccif.ramstate = scif.ramstate;
 
-   assign halt = dcif.flushed;
+   assign halt = lsif.flushed;
 endmodule

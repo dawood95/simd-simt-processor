@@ -7,7 +7,7 @@
 `include "cpu_types_pkg.vh"
 `include "alu_if.vh"
 
-module alu(
+module scalar_alu(
 	   scalar_alu_if.alu alu
 	   );
    
