@@ -18,12 +18,14 @@ module singlecycle (
 
    // bus interface
    load_store_unit_if         lsif ();
-   
+
    // coherence interface
    cache_control_if    #(.CPUID(0))       ccif ();
    
    // map datapath
    datapath #(.PC_INIT(PC0)) DP (CLK, nRST, lsif);
+   load_store_unit load_store (CLK, nRST, lsif);
+   
    // map caches
    caches #(.CPUID(0))       CM (CLK, nRST, lsif, ccif);
    // map coherence

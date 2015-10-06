@@ -7,20 +7,26 @@
 
 `include "cpu_types_pkg.vh"
 
-module control_unit
+module control_unit 
   import cpu_types_pkg::*;
+   #(parameter THREADS = 4)   
    (
     input 	       word_t instr,
-    input logic        zf, of,
-    output 	       aluop_t aluOp,
-    output logic [1:0] portb_sel, pc_sel, regW_sel, wMemReg_sel,
-    output logic       porta_sel, immExt_sel, memREN, memWEN, regWEN, brEn, halt
+    input logic        szf, sof,
+    output logic       isVector,
+    output 	       aluop_t sOp, vOp[THREADS], 
+    output logic [1:0] portb_sel, pc_sel, regW_sel, wMemReg_sel, 
+    output logic       porta_sel, immExt_sel, memREN, memWEN, sregWEN, vregWEN[THREADS], brEn, halt
     );
-
+   
    i_t iinstr;
    j_t jinstr;
    r_t rinstr;
 
+   assign isVector = (iinstr.opcode == VLW || iinstr.opcode == VSW);
+   
+   genvar 	       i;
+   
    always_comb
      begin
 	// Instruction type cast
@@ -36,24 +42,26 @@ module control_unit
 	   (rinstr.opcode == RTYPE && 
 	    (rinstr.funct == ADD || 
 	     rinstr.funct == SUB) && 
-	    of) ||
-	   (iinstr.opcode == ADDI && of))
+	    sof) ||
+	   (iinstr.opcode == ADDI && sof))
 	  halt = 1'b1;
 	else
 	  halt = 1'b0;
+	
 	//Immediate Extension Select
 	// 0 -> zero
 	// 1 -> sign
 	case(iinstr.opcode)
-	  ADDIU, ADDI, LW, SLTI, SLTIU, SW, BNE, BEQ: immExt_sel = 1'b1;
+	  ADDIU, ADDI, LW, SLTI, SLTIU, SW, BNE, BEQ, VADDIU, VADDI, VLW, VSLTI, VSLTIU, VSW : immExt_sel = 1'b1;
 	  default: immExt_sel = 1'b0;
 	endcase // case (iinstr.opcode)
+	
 	//PortB Select
 	// 00 -> Rt
 	// 01 -> shamt
 	// 10 -> immExt
 	// 11 -> 32'd16
-	if (iinstr.opcode == RTYPE)
+	if (iinstr.opcode == RTYPE || iinstr.opcode == VTYPE)
 	  begin
 	     case(rinstr.funct)
 	       SLL, SRL: portb_sel = 2'b01;
@@ -64,34 +72,38 @@ module control_unit
 	  begin
 	     case(iinstr.opcode)
 	       BNE, BEQ: portb_sel = 2'b00;
-	       LUI: portb_sel = 2'b11;
+	       VLUI, LUI: portb_sel = 2'b11;
 	       default: portb_sel = 2'b10;
 	     endcase // case (iinstr.opcode)
 	  end // else: !if(iinstr.opcode == RTYPE)
+
 	//PortA Select
 	// 0 -> rs
 	// 1 -> imm
-	porta_sel = (iinstr.opcode == LUI) ? 1 : 0;
+	porta_sel = (iinstr.opcode == LUI || iinstr.opcode == VLUI) ? 1 : 0;
+
 	//select for reg write
 	// 00 -> alu
 	// 01 -> Memory
 	// 10 -> Pc
-	if(iinstr.opcode == LW)
+	if(iinstr.opcode == LW || iinstr.opcode == VLW)
 	  wMemReg_sel = 2'b01;
 	else if(iinstr.opcode == JAL)
 	  wMemReg_sel = 2'b10;
 	else
 	  wMemReg_sel = 2'b00;
+	
 	//Reg wsel Select
 	//00 -> rd
 	//01 -> rt
 	//10 -> r[31]
 	if(iinstr.opcode == JAL)
 	  regW_sel = 2'b10;
-	else if(iinstr.opcode == RTYPE)
+	else if(iinstr.opcode == RTYPE || iinstr.opcode == VTYPE)
 	  regW_sel = 2'b00;
 	else
 	  regW_sel = 2'b01;
+	
 	//PC Select
 	// 00 -> PC+4 / PC+4+branch
 	// 01 -> Register
@@ -102,55 +114,228 @@ module control_unit
 	  pc_sel = 2'b01;
 	else
 	  pc_sel = 2'b00;
+	
 	//Memory Read Enable
-	memREN = (iinstr.opcode == LW) ? 1 : 0;
+	memREN = (iinstr.opcode == LW || iinstr.opcode == VLW) ? 1 : 0;
+	
 	//Memory Write Enable
-	memWEN = (iinstr.opcode == SW) ? 1 : 0;
+	memWEN = (iinstr.opcode == SW || iinstr.opcode == VSW) ? 1 : 0;
+	
 	//Register Write Enable
-	regWEN = ((rinstr.opcode == RTYPE && rinstr.funct == JR) || 
+	sregWEN = ((rinstr.opcode == RTYPE && rinstr.funct == JR) || 
 		  (iinstr.opcode == BEQ) ||
 		  (iinstr.opcode == BNE) || 
-		  (iinstr.opcode == SW)) ? 0 : 1;
+		  (iinstr.opcode == SW)  ||
+		  (iinstr.opcode == VSW)) ? 0 : 1;
+	
 	//Branch Enable
-	if((iinstr.opcode == BEQ && zf == 1) || (iinstr.opcode == BNE && zf == 0))
+	if((iinstr.opcode == BEQ && szf == 1) || (iinstr.opcode == BNE && szf == 0))
 	  brEn = 1'b1;
 	else
 	  brEn = 1'b0;
-     end
+     end // always_comb
+   
+   generate
+      for(i = 0; i < THREADS; i++)
+	begin : regwen
+	   always_comb
+	     vregWEN[i] = ((rinstr.opcode == RTYPE && rinstr.funct == JR) || 
+			   (iinstr.opcode == BEQ) ||
+			   (iinstr.opcode == BNE) || 
+			   (iinstr.opcode == SW)  ||
+			   (iinstr.opcode == VSW)) ? 0 : 1;
+	end
+   endgenerate
    
    always_comb
-     begin
+     begin : vop
 	// ALUOP
-	if(rinstr.opcode == RTYPE)
+	if(rinstr.opcode == RTYPE || rinstr.opcode == VTYPE)
 	  begin
 	     case(rinstr.funct)
-	       SLL: aluOp = ALU_SLL;
-	       SRL: aluOp = ALU_SRL;
-	       ADD, ADDU : aluOp = ALU_ADD;
-	       SUB, SUBU : aluOp = ALU_SUB;
-	       AND : aluOp = ALU_AND;
-	       OR : aluOp = ALU_OR;
-	       XOR : aluOp = ALU_XOR;
-	       NOR : aluOp = ALU_NOR;
-	       SLT : aluOp = ALU_SLT;
-	       SLTU : aluOp = ALU_SLTU;
-	       default : aluOp = '{default:'x}; //Find out how to make it x
+	       SLL: 
+		 begin
+		    sOp = ALU_SLL;
+		 end
+	       SRL: 
+		 begin
+		    sOp = ALU_SRL;
+		 end
+	       ADD, ADDU : 
+		 begin
+		    sOp = ALU_ADD;
+		 end
+	       SUB, SUBU : 
+		 begin
+		    sOp = ALU_SUB;
+		 end
+	       AND : 
+		 begin 
+		    sOp = ALU_AND;
+		 end
+	       OR : 
+		 begin
+		    sOp = ALU_OR;
+		 end
+	       XOR : 
+		 begin
+		    sOp = ALU_XOR;
+		 end
+	       NOR : 
+		 begin
+		    sOp = ALU_NOR;
+		 end
+	       SLT : 
+		 begin
+		    sOp = ALU_SLT;
+		 end
+	       SLTU : 
+		 begin
+		    sOp = ALU_SLTU;
+		 end
+	       default : 
+		 begin
+		    sOp = '{default:'x}; //Find out how to make it x
+		 end
 	     endcase // case (r_instr.funct)
 	  end
 	else
 	  begin
 	     case(iinstr.opcode)
-	       ADDI, ADDIU, SW, LW: aluOp = ALU_ADD;
-	       LUI: aluOp = ALU_SLL;
-	       ANDI : aluOp = ALU_AND;
-	       ORI : aluOp = ALU_OR;
-	       XORI : aluOp = ALU_XOR;
-	       BEQ, BNE: aluOp = ALU_SUB;
-	       SLTI: aluOp = ALU_SLT;
-	       SLTIU: aluOp = ALU_SLTU;
-	       default : aluOp = '{default:'x}; //Find out how to make it x
+	       ADDI, ADDIU, SW, LW: 
+		 begin
+		    sOp = ALU_ADD;
+		 end
+	       LUI: 
+		 begin
+		    sOp = ALU_SLL;
+		 end
+	       ANDI :
+		 begin
+		    sOp = ALU_AND;
+		 end
+	       ORI : 
+		 begin
+		    sOp = ALU_OR;
+		 end
+	       XORI : 
+		 begin
+		    sOp = ALU_XOR;
+		 end
+	       BEQ, BNE: 
+		 begin
+		    sOp = ALU_SUB;
+		 end
+	       SLTI: 
+		 begin
+		    sOp = ALU_SLT;
+		 end
+	       SLTIU: 
+		 begin
+		    sOp = ALU_SLTU;
+		 end
+	       default : 
+		 begin
+		    sOp = '{default:'x}; //Find out how to make it x
+		 end
 	     endcase // case (iinstr.opcode)
 	  end // else: !if(rinstr.opcode == RTYPE)
-     end
+     end // always_comb
+
+   generate
+      for ( i = 0; i < THREADS; i++)
+	begin : verop
+	   always_comb
+	     begin
+		// ALUOP
+		if(rinstr.opcode == RTYPE || rinstr.opcode == VTYPE)
+		  begin
+		     case(rinstr.funct)
+		       SLL: 
+			 begin
+			    vOp[i] = ALU_SLL;
+			 end
+		       SRL: 
+			 begin
+			    vOp[i] = ALU_SRL;
+			 end
+		       ADD, ADDU : 
+			 begin
+			    vOp[i] = ALU_ADD;
+			 end
+		       SUB, SUBU : 
+			 begin
+			    vOp[i] = ALU_SUB;
+			 end
+		       AND : 
+			 begin 
+			    vOp[i] = ALU_AND;
+			 end
+		       OR : 
+			 begin
+			    vOp[i] = ALU_OR;
+			 end
+		       XOR : 
+			 begin
+			    vOp[i] = ALU_XOR;
+			 end
+		       NOR : 
+			 begin
+			    vOp[i] = ALU_NOR;
+			 end
+		       SLT : 
+			 begin
+			    vOp[i] = ALU_SLT;
+			 end
+		       SLTU : 
+			 begin
+			    vOp[i] = ALU_SLTU;
+			 end
+		       default : 
+			 begin
+			    vOp[i] = '{default:'x}; //Find out how to make it x
+			 end
+		     endcase // case (r_instr.funct)
+		  end
+		else
+		  begin
+		     case(iinstr.opcode)
+		       VADDI, VADDIU, VSW, VLW: 
+			 begin
+			    vOp[i] = ALU_ADD;
+			 end
+		       VLUI: 
+			 begin
+			    vOp[i] = ALU_SLL;
+			 end
+		       VANDI :
+			 begin
+			    vOp[i] = ALU_AND;
+			 end
+		       VORI : 
+			 begin
+			    vOp[i] = ALU_OR;
+			 end
+		       VXORI : 
+			 begin
+			    vOp[i] = ALU_XOR;
+			 end
+		       VSLTI: 
+			 begin
+			    vOp[i] = ALU_SLT;
+			 end
+		       SLTIU: 
+			 begin
+			    vOp[i] = ALU_SLTU;
+			 end
+		       default : 
+			 begin
+			    vOp[i] = '{default:'x}; //Find out how to make it x
+			 end
+		     endcase // case (iinstr.opcode)
+		  end // else: !if(rinstr.opcode == RTYPE)
+	     end // always_comb
+	end // for ( i = 0; i < THREADS; i++)
+   endgenerate
    
 endmodule // control_unit

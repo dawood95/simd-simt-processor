@@ -43,7 +43,7 @@ interface load_store_unit_if;
    modport loadstore 
      (
       // Datapath
-      input  readReq, writeReq, isVector, dhalt,
+      input  instReq, readReq, writeReq, isVector, dhalt,
 	     vdaddr, vdstore, sdaddr, sdstore, iaddr, 
       output iHit, dHit,
 	     iload, vdload, sdload,

@@ -20,10 +20,11 @@ module load_store_unit (
    parameter CPUID = 0;
 
    logic [$clog2(THREADS)-1:0] 	    index, nextIndex;
-   logic 			    isData;
+   logic 			    isData, iHit;
    word_t                           daddr, dstore;
+   word_t                           dload[THREADS];
    
-
+   
    always_comb
      begin
 	isData = ls.readReq | ls.writeReq;
@@ -37,20 +38,25 @@ module load_store_unit (
 	else if (ls.dcacheHit)
 	  index <= nextIndex;
      end
-   
+
+   assign ls.iload = ls.imemload;	
+   assign ls.sdload = (!ls.isVector) ? ls.dmemload : 32'hDEADBEEF;   
+
    always_comb
      begin
 	ls.iHit = ls.icacheHit;
 	ls.dHit = (nextIndex == 0) ? ls.dcacheHit : 0;
-	ls.iload = ls.imemload;	
-	ls.sdload = ls.dmemload;
 
 	ls.chalt = ls.dhalt;
-	ls.imemREN = 1'b1;
+	ls.imemREN = ls.instReq;
+	//ls.dmemREN = (iHit) ? ls.readReq : 1'b0;
+	//ls.dmemWEN = (iHit) ? ls.writeReq : 1'b0;
 	
 	ls.imemaddr = ls.iaddr;
-	ls.dmemaddr = (!ls.isVector) ? ls.sdaddr : daddr;
+	ls.dmemaddr = (!ls.isVector) ? ls.sdaddr : ls.vdaddr[index];
 	ls.dmemstore = (!ls.isVector) ? ls.sdstore : dstore;
+	ls.vdload = dload;
+	ls.vdload[THREADS-1] = ls.dmemload;
      end
 
    always_ff @ (posedge CLK, negedge nRST)
@@ -59,16 +65,19 @@ module load_store_unit (
 	  begin
 	     ls.dmemREN <= 1'b0;
 	     ls.dmemWEN <= 1'b0;
+	     iHit <= 1'b0;
 	  end
-	else if(ls.icacheHit)
+	else if(ls.dcacheHit && (nextIndex == 0))
+	  begin
+	     ls.dmemREN <= 1'b0;
+	     ls.dmemWEN <= 1'b0;
+	     iHit <= 1'b0;
+	  end
+	else 
 	  begin
 	     ls.dmemREN <= ls.readReq;
 	     ls.dmemWEN <= ls.writeReq;
-	  end
-	else if(ls.dcacheHit & (nextIndex == 0))
-	  begin
-	     ls.dmemREN <= 0;
-	     ls.dmemWEN <= 0;
+	     iHit <= 1'b1;
 	  end
      end // always_ff @
 
@@ -78,13 +87,13 @@ module load_store_unit (
 	  begin
 	     daddr <= ls.vdaddr[0];
 	     dstore <= ls.vdstore[0];
-	     ls.vdload <= '{default:0};
+	     dload <= '{default:0};
 	  end
 	else if (ls.dcacheHit)
 	  begin
 	     daddr <= ls.vdaddr[nextIndex];
 	     dstore <= ls.vdstore[nextIndex];
-	     ls.vdload[index] <= ls.dmemload;
+	     dload[index] <= ls.dmemload;
 	  end
      end
    
