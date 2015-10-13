@@ -68,12 +68,12 @@ v.ADDI   	$rt,$rs,imm   	V[rt] <= V[rs] + SignExtImm
 v.ANDI  	$rt,$rs,imm  	V[rt] <= V[rs] & ZeroExtImm  
 v.LUI    	$rt,imm       	V[rt] <= {imm,16b'0}  
 v.LW     	$rt,imm($rs)  	V[rt] <= M[V[rs] + SignExtImm]  
-V.LWO		$rt,off($rs)    V[rt] <= {M[V[rs]],M[V[rs]+off]...M[V[rs]+(THREADS-1)*off]}
+V.LWO		$rt,off($rs)    V[rt] <= {M[S[rs]],M[S[rs]+off]...M[S[rs]+(THREADS-1)*off]}
 v.ORI    	$rt,$rs,imm   	V[rt] <= V[rs] OR ZeroExtImm  
 v.SLTI   	$rt,$rs,imm   	V[rt] <= (V[rs] < SignExtImm) ? 1 : 0  
 v.SLTIU 	$rt,$rs,imm   	V[rt] <= (V[rs] < SignExtImm) ? 1 : 0  
 v.SW     	$rt,imm($rs)  	M[V[rs] + SignExtImm] <= V[rt]
-V.SWO		$rt,off($rs)    {M[V[rs]],M[V[rs]+off]...M[V[rs]+(THREADS-1)*off]} <= V[rt]
+V.SWO		$rt,off($rs)    {M[S[rs]],M[S[rs]+off]...M[S[rs]+(THREADS-1)*off]} <= V[rt]
 v.XORI   	$rt,$rs,imm   	V[rt] <= V[rs] XOR ZeroExtImm  
 
 #### J-type Instructions
