@@ -44,7 +44,8 @@ module datapath (
    aluop_t                   op;
    word_t                    immExt, pc, pc_next;
    logic 		     r_req, w_req, porta_sel, immExt_sel, brEn, pcEn, halt;
-   logic [1:0] 		     portb_sel, pc_sel, wMemReg_sel, regW_sel;
+   logic [1:0] 		     vporta_sel, portb_sel, pc_sel, wMemReg_sel, regW_sel;
+   word_t vportb[THREADS];
    
    control_unit control_unit(.instr(instr),
 			     .szf(alif.zf),
@@ -54,6 +55,7 @@ module datapath (
 			     .vOp(vlif.op),
        			     .portb_sel(portb_sel),
        			     .porta_sel(porta_sel),
+			     .vporta_sel(vporta_sel),
        			     .immExt_sel(immExt_sel), 
        			     .pc_sel(pc_sel), 
        			     .regW_sel(regW_sel),
@@ -141,13 +143,30 @@ module datapath (
 	begin : vector
 	   always_comb
 	     begin
-		
-		vlif.porta[i] = (porta_sel) ? immExt : vfif.rdata1[i];
+
+		case(vporta_sel)
+		  2'b00: vlif.porta[i] = immExt;
+		  2'b01: vlif.porta[i] = vfif.rdata1[i];
+		  2'b10: vlif.porta[i] = rfif.rdata1;
+		  default : vlif.porta[i] = vfif.rdata1[i];
+		endcase // case (vporta_sel)
 		
 		case(portb_sel)
 		  2'b00: vlif.portb[i] = vfif.rdata2[i];
 		  2'b01: vlif.portb[i] = rinstr.shamt;
-		  2'b10: vlif.portb[i] = immExt;
+		  2'b10:
+		    begin
+		       if(iinstr.opcode == VLW || iinstr.opcode == VSW)
+			 if(i == 0)
+			   vportb[i] = 0;
+			 else if(i%2 == 0)
+			   vportb[i] = immExt << (i-1);
+			 else
+			   vportb[i] = vportb[i-1]+immExt;
+		       else
+			 vportb[i] = immExt;
+		       vlif.portb[i] = vportb[i];
+		    end
 		  2'b11: vlif.portb[i] = 32'd16;
 		endcase // case (portb_sel)
 		
@@ -157,7 +176,7 @@ module datapath (
 		  2'b01: vfif.wdata[i] = lsif.vdload[i];
 		  2'b10: vfif.wdata[i] = pc+4;
 		endcase
-		
+
 		lsif.vdaddr[i] = vlif.out[i];
 		lsif.vdstore[i] = vfif.rdata2[i];
 	     end

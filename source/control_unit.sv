@@ -15,7 +15,7 @@ module control_unit
     input logic        szf, sof,
     output logic       isVector,
     output 	       aluop_t sOp, vOp[THREADS], 
-    output logic [1:0] portb_sel, pc_sel, regW_sel, wMemReg_sel, 
+    output logic [1:0] vporta_sel, portb_sel, pc_sel, regW_sel, wMemReg_sel, 
     output logic       porta_sel, immExt_sel, memREN, memWEN, sregWEN, vregWEN[THREADS], brEn, halt
     );
    
@@ -81,6 +81,12 @@ module control_unit
 	// 0 -> rs
 	// 1 -> imm
 	porta_sel = (iinstr.opcode == LUI || iinstr.opcode == VLUI) ? 1 : 0;
+
+	//PortA Select
+	// 00 -> imm
+	// 01 -> V[rs]
+	// 10 -> S[rs]
+	vporta_sel = (iinstr.opcode == LUI || iinstr.opcode == VLUI) ? 2'b00 : (iinstr.opcode == VLW || iinstr.opcode == VSW) ? 2'b10 : 2'b01;
 
 	//select for reg write
 	// 00 -> alu
