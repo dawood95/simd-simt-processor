@@ -156,7 +156,7 @@ module datapath (
 		  2'b01: vlif.portb[i] = rinstr.shamt;
 		  2'b10:
 		    begin
-		       if(iinstr.opcode == VLW || iinstr.opcode == VSW)
+		       if(iinstr.opcode == VLWO || iinstr.opcode == VSWO)
 			 if(i == 0)
 			   vportb[i] = 0;
 			 else if(i%2 == 0)
@@ -170,7 +170,6 @@ module datapath (
 		  2'b11: vlif.portb[i] = 32'd16;
 		endcase // case (portb_sel)
 		
-
 		case(wMemReg_sel)
 		  2'b00,2'b11 : vfif.wdata[i] = vlif.out[i];
 		  2'b01: vfif.wdata[i] = lsif.vdload[i];

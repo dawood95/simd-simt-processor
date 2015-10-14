@@ -23,7 +23,7 @@ module control_unit
    j_t jinstr;
    r_t rinstr;
 
-   assign isVector = (iinstr.opcode == VLW || iinstr.opcode == VSW);
+   assign isVector = (iinstr.opcode == VLW || iinstr.opcode == VSW || iinstr.opcode == VLWO || iinstr.opcode == VSWO);
    
    genvar 	       i;
    
@@ -52,7 +52,7 @@ module control_unit
 	// 0 -> zero
 	// 1 -> sign
 	case(iinstr.opcode)
-	  ADDIU, ADDI, LW, SLTI, SLTIU, SW, BNE, BEQ, VADDIU, VADDI, VLW, VSLTI, VSLTIU, VSW : immExt_sel = 1'b1;
+	  ADDIU, ADDI, LW, SLTI, SLTIU, SW, BNE, BEQ, VADDIU, VADDI, VLW, VLWO, VSLTI, VSLTIU, VSW, VSWO : immExt_sel = 1'b1;
 	  default: immExt_sel = 1'b0;
 	endcase // case (iinstr.opcode)
 	
@@ -86,13 +86,13 @@ module control_unit
 	// 00 -> imm
 	// 01 -> V[rs]
 	// 10 -> S[rs]
-	vporta_sel = (iinstr.opcode == LUI || iinstr.opcode == VLUI) ? 2'b00 : (iinstr.opcode == VLW || iinstr.opcode == VSW) ? 2'b10 : 2'b01;
+	vporta_sel = (iinstr.opcode == LUI || iinstr.opcode == VLUI) ? 2'b00 : (iinstr.opcode == VLWO || iinstr.opcode == VSWO) ? 2'b10 : 2'b01;
 
 	//select for reg write
 	// 00 -> alu
 	// 01 -> Memory
 	// 10 -> Pc
-	if(iinstr.opcode == LW || iinstr.opcode == VLW)
+	if(iinstr.opcode == LW || iinstr.opcode == VLW || iinstr.opcode == VLWO)
 	  wMemReg_sel = 2'b01;
 	else if(iinstr.opcode == JAL)
 	  wMemReg_sel = 2'b10;
@@ -122,17 +122,17 @@ module control_unit
 	  pc_sel = 2'b00;
 	
 	//Memory Read Enable
-	memREN = (iinstr.opcode == LW || iinstr.opcode == VLW) ? 1 : 0;
+	memREN = (iinstr.opcode == LW || iinstr.opcode == VLW || iinstr.opcode == VLWO) ? 1 : 0;
 	
 	//Memory Write Enable
-	memWEN = (iinstr.opcode == SW || iinstr.opcode == VSW) ? 1 : 0;
+	memWEN = (iinstr.opcode == SW || iinstr.opcode == VSW || iinstr.opcode == VSWO) ? 1 : 0;
 	
 	//Register Write Enable
 	sregWEN = ((rinstr.opcode == RTYPE && rinstr.funct == JR) || 
+		  (rinstr.opcode == VTYPE) ||
 		  (iinstr.opcode == BEQ) ||
 		  (iinstr.opcode == BNE) || 
-		  (iinstr.opcode == SW)  ||
-		  (iinstr.opcode == VSW)) ? 0 : 1;
+		  (iinstr.opcode == SW)) ? 0 : 1;
 	
 	//Branch Enable
 	if((iinstr.opcode == BEQ && szf == 1) || (iinstr.opcode == BNE && szf == 0))
@@ -145,11 +145,8 @@ module control_unit
       for(i = 0; i < THREADS; i++)
 	begin : regwen
 	   always_comb
-	     vregWEN[i] = ((rinstr.opcode == RTYPE && rinstr.funct == JR) || 
-			   (iinstr.opcode == BEQ) ||
-			   (iinstr.opcode == BNE) || 
-			   (iinstr.opcode == SW)  ||
-			   (iinstr.opcode == VSW)) ? 0 : 1;
+	     vregWEN[i] = ((iinstr.opcode == VSW)  ||
+			   (iinstr.opcode == VSWO)) ? 0 : 1;
 	end
    endgenerate
    
@@ -306,7 +303,7 @@ module control_unit
 		else
 		  begin
 		     case(iinstr.opcode)
-		       VADDI, VADDIU, VSW, VLW: 
+		       VADDI, VADDIU, VSW, VLW, VLWO, VSWO: 
 			 begin
 			    vOp[i] = ALU_ADD;
 			 end

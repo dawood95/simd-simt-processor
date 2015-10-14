@@ -77,7 +77,9 @@ package cpu_types_pkg;
 		 VXORI    = 6'b101110,
 		 VLUI     = 6'b101111,
 		 VLW      = 6'b110011,
-		 VSW      = 6'b111011
+		 VSW      = 6'b111011,
+		 VLWO     = 6'b110001,
+		 VSWO     = 6'b111001
 		
 		 } opcode_t;
    
