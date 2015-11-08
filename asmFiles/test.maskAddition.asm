@@ -15,16 +15,20 @@
 				# Load target
 				s.ori $1, $0, 0x0B00
 				v.lwo $2, 0($1)
+				v.ori $3, $0, 0
 incr:
 				sltiu $3, $2, 5
 				beq $3, $0, exit
 				mltu $1, $2
 				m.v.addiu $1, $1, 0x10
+				m.v.addiu $3, $3, 0x01
 				s.addiu $2, $2, 1
 				j incr
 exit:
-				s.ori $1, $0, 0x0A00 
+				s.ori $1, $0, 0x0A00
+				s.ori $2, $0, 0x0C00
 				v.swo $1, 4($1)
+				v.swo $3, 4($2)
 				halt
 
 				org 0x0A00

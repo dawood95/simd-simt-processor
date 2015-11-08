@@ -54,7 +54,8 @@ module load_store_unit (
 	
 	ls.imemaddr = ls.iaddr;
 	ls.dmemaddr = (!ls.isVector) ? ls.sdaddr : ls.vdaddr[index];
-	ls.dmemstore = (!ls.isVector) ? ls.sdstore : dstore;
+		ls.dmemstore = (!ls.isVector) ? ls.sdstore : ls.vdstore[index];
+		
 	ls.vdload = dload;
 	ls.vdload[THREADS-1] = ls.dmemload;
      end
