@@ -11,14 +11,14 @@ module control_unit
   import cpu_types_pkg::*;
    #(parameter THREADS = 4)   
    (
-    input 						 word_t instr,
-    input logic 			 szf, sof,
-		input logic 			 mask[THREADS],
-    output logic 			 isVectorLS,
-    output 						 aluop_t sOp, vOp[THREADS], 
+    input 			   word_t instr,
+    input logic 	   szf, sof,
+	input logic 	   mask[THREADS],
+    output logic 	   isVectorLS,
+    output 			   aluop_t sOp, vOp[THREADS], 
     output logic [1:0] vporta_sel, portb_sel, pc_sel, regW_sel, wMemReg_sel, 
-		output logic [2:0] mask_sel,
-    output logic 			 porta_sel, immExt_sel, memREN, memWEN, sregWEN, vregWEN[THREADS], brEn, halt
+	output logic [2:0] mask_sel,
+    output logic 	   porta_sel, immExt_sel, memREN, memWEN, sregWEN, vregWEN[THREADS], brEn, halt
     );
 
    logic 							 isVector, isMasked, isMask;

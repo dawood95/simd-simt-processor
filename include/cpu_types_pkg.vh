@@ -41,32 +41,34 @@ package cpu_types_pkg;
    typedef enum logic [OP_W-1:0] 
 				{
 				 // rtype - use funct
-				 RTYPE   = 6'b000000,
-				
+				 RTYPE   = 6'b000000, // 0
+				 
 				 // jtype
-				 J       = 6'b000010,
-				 JAL     = 6'b000011,
+				 J       = 6'b000010, // 2
+				 JAL     = 6'b000011, // 3
 				
 				 // itype
-				 BEQ     = 6'b000100,
-				 BNE     = 6'b000101,
-				 ADDI    = 6'b001000,
-				 ADDIU   = 6'b001001,
-				 SLTI    = 6'b001010,
-				 SLTIU   = 6'b001011,
-				 ANDI    = 6'b001100,
-				 ORI     = 6'b001101,
-				 XORI    = 6'b001110,
-				 LUI     = 6'b001111,
-				 LW      = 6'b010011,
-				 SW      = 6'b011011,
-				 LL      = 6'b010000,
-				 SC      = 6'b011000,
+				 BEQ     = 6'b000100, // 4
+				 BNE     = 6'b000101, // 5
+				 ADDI    = 6'b001000, // 8
+				 ADDIU   = 6'b001001, // 9
+				 SLTI    = 6'b001010, // 10
+				 SLTIU   = 6'b001011, // 11
+				 ANDI    = 6'b001100, // 12
+				 ORI     = 6'b001101, // 13
+				 XORI    = 6'b001110, // 14
+				 LUI     = 6'b001111, // 15
+				 LW      = 6'b010011, // 19
+				 SW      = 6'b011011, // 27
+				 LL      = 6'b010000, // 16
+				 SC      = 6'b011000, // 24
 				
 				 // vtype - use funct
 				 VTYPE   = 6'b100000,
 				
 				 // vitype
+				 VBEQ     = 6'b110110,
+				 VBNE     = 6'b110101,
 				 VADDI    = 6'b101000,
 				 VADDIU   = 6'b101001,
 				 VSLTI    = 6'b101010,
@@ -82,7 +84,7 @@ package cpu_types_pkg;
 
 				 MVTYPE   = 6'b110000,
 				
-				 // vitype
+				 // mvitype
 				 MVADDI    = 6'b110010,
 				 MVADDIU   = 6'b110100,
 				 MVANDI    = 6'b110111,
