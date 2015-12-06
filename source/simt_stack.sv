@@ -12,19 +12,15 @@
 
 `include "cpu_types_pkg.vh"
 
-module simt_stack import cpu_types_pkg::*; 
-   #(parameter THREADS = 4) 
+module simt_stack 
+  import cpu_types_pkg::*; 
    (
-	input logic   clk, nRST,
-	input logic   pushEn, popEn,
-	input word_t  newSync, newAddr,
-	input logic   newMask[THREADS],
-    output word_t currentSync, currentAddr,
-	output logic  currentMask[THREADS],
-	output logic  overflow, underflow, isEmpty
+	input logic CLK, nRST,
+	simt_stack_if.stack stif
 	);
 
-
+   parameter THREADS = 4
+					   
    logic maskStack[THREADS][15:0];
    word_t addrStack[15:0];
    word_t syncStack[15:0];
@@ -32,14 +28,14 @@ module simt_stack import cpu_types_pkg::*;
 
    always_comb
 	 begin
-		currentSync = syncStack[index];
-		currentMask = maskStack[index];
-		currentAddr = addrStack[index];
-		overflow = (index == 4'd15 && pushEn) ? 1'b1 : 1'b0;
-		underflow = (index == 0 && popEn) ? 1'b1 : 1'b0;
+		stif.currentSync = syncStack[index];
+		stif.currentMask = maskStack[index];
+		stif.currentAddr = addrStack[index];
+		stif.overflow = (index == 4'd15 && stif.pushEn) ? 1'b1 : 1'b0;
+		stif.underflow = (index == 0 && stif.popEn) ? 1'b1 : 1'b0;
 	 end
    
-   always_ff @ (posedge clk or negedge nRST)
+   always_ff @ (posedge CLK or negedge nRST)
 	 begin		
 		if (!nRST)
 		  begin
@@ -48,14 +44,14 @@ module simt_stack import cpu_types_pkg::*;
 			 addrStack = '{default:'0};
 			 index = 0;
 		  end
-		else if (pushEn)
+		else if (stif.pushEn)
 		  begin
-			 maskStack[index] = newMask;
-			 syncStack[index] = newSync;
-			 addrStack[index] = newAddr;
+			 maskStack[index] = stif.newMask;
+			 syncStack[index] = stif.newSync;
+			 addrStack[index] = stif.newAddr;
 			 index = index + 1;
 		  end
-		else if (popEn)
+		else if (stif.popEn)
 		  begin
 			 index = index - 1;
 		  end

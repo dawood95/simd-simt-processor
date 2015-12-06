@@ -36,6 +36,8 @@ module datapath
    
    scalar_register_file_if rfif();
    vector_register_file_if vfif();
+
+   simt_stack_if stif();
    
    scalar_alu sca_alu(alif);
    vector_alu vec_alu(vlif);
@@ -43,6 +45,8 @@ module datapath
    scalar_register_file sca_file( CLK, nRST, rfif);
    vector_register_file vec_file( CLK, nRST, vfif);
 
+   simt_stack simt_stack(CLK, nRST, stif);
+   
    aluop_t     op;
    word_t      immExt, pc, pc_next;
    logic 	   r_req, w_req, porta_sel, immExt_sel, brEn, pcEn, halt;
@@ -72,10 +76,10 @@ module datapath
        						 .memWEN(lsif.writeReq), 
        						 .sregWEN(rfif.wen),
 							 .vregWEN(vfif.wen),
-							 .mask(mask),
-							 .mask_sel(mask_sel),
+							 .mask(stif.currentMask),
        						 .brEn(brEn),
 							 .vbrEn(vbrEn),
+							 .pushEn(stif.pushEn),
 							 .halt(halt)
 							 );
    
@@ -125,7 +129,7 @@ module datapath
 		rfif.rsel2 = rinstr.rt;
 		
 		case(wMemReg_sel)
-		  2'b00,2'b11 : rfif.wdata = alif.out;
+		  2'b00, 2'b11: rfif.wdata = alif.out;
 		  2'b01: rfif.wdata = lsif.sdload;
 		  2'b10: rfif.wdata = pc+4;
 		endcase
@@ -182,7 +186,7 @@ module datapath
 				  2'b11: vportb[i] = 32'd16;
 				endcase // case (portb_sel)
 
-				case(mask_sel)
+		/*		case(mask_sel)
 				  // Invert
 				  3'd0: 
 					nextMask[i] = ~mask[i];
@@ -197,7 +201,7 @@ module datapath
 					nextMask[i] = (vporta[i] == vportb[i]) ? 1'b1 : 1'b0;
 				  default:
 					nextMask[i] = mask[i];
-				endcase // case (mask_sel)
+				endcase // case (mask_sel)*/
 				
 				case(wMemReg_sel)
 				  2'b00,2'b11 : vfif.wdata[i] = vlif.out[i];
@@ -210,7 +214,8 @@ module datapath
 			 end
 		end
    endgenerate
-   
+
+   /* Mask logic for masked instructions 
    always_ff @(posedge CLK, negedge nRST)
 	 begin
 		for (int j = 0; j < THREADS; j++)
@@ -221,13 +226,29 @@ module datapath
 			   mask[j] <= nextMask[j];
 		  end
 	 end
+   */
+
+   always_comb
+	 begin
+
+		stif.newSync = syncRegister;
+		stif.newMask = vbrEn;		
+		stif.newAddr = pc + 4 + immExt << 2;
+	
+		if(pc_next == stif.currentSync)
+		  stif.popEn = 1'b1;
+		
+	 end
    
    always_ff @(posedge CLK, negedge nRST)
      begin
 		if(!nRST)
 		  pc <= PC_INIT;
 		else if(pcEn & !lsif.dhalt)
-		  pc <= pc_next;
+		  if(pc_next == stif.currentSync)
+			pc <= stif.currentAddr;
+		  else
+			pc <= pc_next;
      end
 
    always_ff @(posedge CLK, negedge nRST)
