@@ -97,7 +97,8 @@ package cpu_types_pkg;
 				 MLTU    = 6'b100010,
 				 MEQ     = 6'b100011,
 				 MINV    = 6'b100101,
-				
+
+				 SYNC    = 6'b111101,
 				 // halt
 				 HALT     = 6'b111111
 				

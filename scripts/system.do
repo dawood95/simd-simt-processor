@@ -72,6 +72,24 @@ add wave -noupdate /system_tb/DUT/CPU/DP/vlif/porta
 add wave -noupdate /system_tb/DUT/CPU/DP/vlif/portb
 add wave -noupdate /system_tb/DUT/CPU/DP/vlif/out
 add wave -noupdate -expand /system_tb/DUT/CPU/DP/vlif/op
+add wave -noupdate -divider simt
+add wave -noupdate /system_tb/DUT/CPU/DP/simt_stack/CLK
+add wave -noupdate /system_tb/DUT/CPU/DP/simt_stack/nRST
+add wave -noupdate -expand /system_tb/DUT/CPU/DP/simt_stack/maskStack
+add wave -noupdate -expand /system_tb/DUT/CPU/DP/simt_stack/addrStack
+add wave -noupdate -expand /system_tb/DUT/CPU/DP/simt_stack/syncStack
+add wave -noupdate /system_tb/DUT/CPU/DP/simt_stack/index
+add wave -noupdate /system_tb/DUT/CPU/DP/simt_stack/index
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/pushEn
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/popEn
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/newSync
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/newAddr
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/currentSync
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/currentAddr
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/currentMask
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/overflow
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/underflow
+add wave -noupdate /system_tb/DUT/CPU/DP/stif/isEmpty
 add wave -noupdate -divider reg
 add wave -noupdate /system_tb/DUT/CPU/DP/vfif/wsel
 add wave -noupdate /system_tb/DUT/CPU/DP/vfif/rsel1
@@ -79,7 +97,7 @@ add wave -noupdate /system_tb/DUT/CPU/DP/vfif/rsel2
 add wave -noupdate /system_tb/DUT/CPU/DP/sca_file/register_file
 add wave -noupdate -expand /system_tb/DUT/CPU/DP/vec_file/register_file
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {188606 ps} 0}
+WaveRestoreCursors {{Cursor 1} {777449 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 215
@@ -95,4 +113,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ns
 update
-WaveRestoreZoom {134948 ps} {242670 ps}
+WaveRestoreZoom {346561 ps} {1208337 ps}

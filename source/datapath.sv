@@ -53,7 +53,7 @@ module datapath
    logic [1:0] vporta_sel, portb_sel, pc_sel, wMemReg_sel, regW_sel;
 
    word_t      vporta[THREADS], vportb[THREADS];
-   logic 	   brEn[THREADS];
+   logic 	   vbrEn[THREADS], writeSync;
    logic [2:0] mask_sel;
    logic 	   mask[THREADS], nextMask[THREADS];
 
@@ -62,6 +62,7 @@ module datapath
    control_unit control_unit(.instr(instr),
 							 .szf(alif.zf),
 		       				 .sof(alif.of),
+							 .vzf(vlif.zf),
 							 .isVectorLS(lsif.isVector),
 	       					 .sOp(alif.op),
 							 .vOp(vlif.op),
@@ -80,6 +81,7 @@ module datapath
        						 .brEn(brEn),
 							 .vbrEn(vbrEn),
 							 .pushEn(stif.pushEn),
+							 .writeSync(writeSync),
 							 .halt(halt)
 							 );
    
@@ -97,9 +99,10 @@ module datapath
 		lsif.iaddr = pc;
 		
 		case(pc_sel)
-		  2'b00, 2'b11: pc_next = pc + 4 + ((brEn) ? immExt<<2 : 32'd0);
+		  2'b00: pc_next = pc + 4 + ((brEn) ? immExt<<2 : 32'd0);
 		  2'b01: pc_next = rfif.rdata1;
 		  2'b10: pc_next = {pc[31:28],jinstr.addr,2'b00};
+		  2'b11: pc_next = pc + 4 + (immExt<<2);
 		endcase
 		
 		pcEn = lsif.iHit;
@@ -228,15 +231,25 @@ module datapath
 	 end
    */
 
+   always_ff @ (posedge CLK, negedge nRST)
+	 begin
+		if(!nRST)
+		  syncRegister <= PC_INIT;
+		else if(writeSync)
+		  syncRegister <= immExt;
+	 end
+
    always_comb
 	 begin
 
 		stif.newSync = syncRegister;
 		stif.newMask = vbrEn;		
-		stif.newAddr = pc + 4 + immExt << 2;
+		stif.newAddr = pc + 4 + (immExt << 2);
 	
-		if(pc_next == stif.currentSync)
+		if(pc_next == stif.currentSync || stif.currentMask == '{THREADS{1'b0}})
 		  stif.popEn = 1'b1;
+		else
+		  stif.popEn = 1'b0;
 		
 	 end
    
@@ -247,7 +260,7 @@ module datapath
 		else if(pcEn & !lsif.dhalt)
 		  if(pc_next == stif.currentSync)
 			pc <= stif.currentAddr;
-		  else
+		  else if(stif.currentMask != '{THREADS{1'b0}})
 			pc <= pc_next;
      end
 

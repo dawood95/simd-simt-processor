@@ -11,14 +11,14 @@
  `include "cpu_types_pkg.vh"
 
 interface simt_stack_if;
-
+   
    import cpu_types_pkg::*;
-
+   
    parameter CPUS = 2;
    parameter CPUID = 0;
    parameter THREADS = 4;
    
-   logic [1:0] pushEn;
+   logic       pushEn;
    logic 	   popEn;
    
    word_t      newSync, newAddr;
@@ -32,10 +32,10 @@ interface simt_stack_if;
 	 (
 	  input  pushEn, popEn,
    			 newSync, newAddr,
-			 newMask[THREADS],
+			 newMask,
 	  
 	  output currentSync, currentAddr,
-			 currentMask[THREADS],
+			 currentMask,
 			 overflow, underflow, isEmpty   
 	  );
 
@@ -43,10 +43,10 @@ interface simt_stack_if;
 	 (
 	  output pushEn, popEn,
    			 newSync, newAddr,
-			 newMask[THREADS],
+			 newMask,
 	  
 	  input  currentSync, currentAddr,
-			 currentMask[THREADS],
+			 currentMask,
 			 overflow, underflow, isEmpty 
 	  );
 
